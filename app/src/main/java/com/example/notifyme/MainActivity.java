@@ -18,6 +18,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
     private static final String PRIMARY_CHANNEL_ID = "primary_notification_channel";
@@ -29,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
 
     private NotificationReceiver mReceiver = new NotificationReceiver();
     private static String ACTION_NOTIFICATION_UPDATE="com.example.notifyme.ACTION_NOTIFICATION_UPDATE";
+    private static String ACTION_SEND_NOTIFICATION_REMOVED="com.example.notifyme.ACTION_NOTIFICATION_REMOVED";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,7 +44,10 @@ public class MainActivity extends AppCompatActivity {
         button_update = findViewById(R.id.update);
         button_update.setOnClickListener(v->updateNotification());
         setNotificationButtonState(true,false,false);
-        registerReceiver(mReceiver,new IntentFilter(ACTION_NOTIFICATION_UPDATE));
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(ACTION_NOTIFICATION_UPDATE);
+        intentFilter.addAction(ACTION_SEND_NOTIFICATION_REMOVED);
+        registerReceiver(mReceiver,intentFilter);
     }
 
     @Override
@@ -60,6 +65,9 @@ public class MainActivity extends AppCompatActivity {
         Intent updateIntent = new Intent(ACTION_NOTIFICATION_UPDATE);
         PendingIntent updatePendingIntent= PendingIntent.getBroadcast(this,NOTIFICATION_ID,updateIntent,PendingIntent.FLAG_ONE_SHOT);
 
+        Intent sendRemovedIntent = new Intent(ACTION_SEND_NOTIFICATION_REMOVED);
+        PendingIntent sendRemovedPendingIntent= PendingIntent.getBroadcast(this,NOTIFICATION_ID,sendRemovedIntent,PendingIntent.FLAG_ONE_SHOT);
+
         NotificationCompat.Builder notifyBuilder =
                 new NotificationCompat.Builder(this, PRIMARY_CHANNEL_ID)
             .setContentTitle("You've been notified!")
@@ -72,7 +80,10 @@ public class MainActivity extends AppCompatActivity {
             .setDefaults(NotificationCompat.DEFAULT_ALL)
 
             //In org. version action is added in sendNotification
-            .addAction(R.drawable.ic_update,"Update Notification",updatePendingIntent);
+            .addAction(R.drawable.ic_update,"Update Notification",updatePendingIntent)
+            .setDeleteIntent(sendRemovedPendingIntent);
+
+                ;
         return  notifyBuilder;
     }
 
@@ -118,7 +129,6 @@ public class MainActivity extends AppCompatActivity {
         setNotificationButtonState(false,true,true);
     }
 
-
     private void cancelNotification(){
         mNotifyManager.cancel(NOTIFICATION_ID);
         setNotificationButtonState(true,false,false);
@@ -141,10 +151,14 @@ public class MainActivity extends AppCompatActivity {
     class NotificationReceiver extends BroadcastReceiver{
         NotificationReceiver(){}
         @Override
-        public void onReceive(Context context, Intent intent) {
-            updateNotification();
+        public void onReceive(Context context, Intent intent)
+        {
+            if (intent.getAction().equals(ACTION_NOTIFICATION_UPDATE)){
+                updateNotification();
+            } else if (intent.getAction().equals(ACTION_SEND_NOTIFICATION_REMOVED)) {
+                Toast.makeText(context,"Notfication removed",Toast.LENGTH_SHORT).show();
+                setNotificationButtonState(true,false,false);
+            }
         }
     }
-
-
 }
