@@ -4,7 +4,10 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -23,6 +26,10 @@ public class MainActivity extends AppCompatActivity {
     private Button button_cancel;
     private Button button_update;
     private NotificationManager mNotifyManager;
+
+    private NotificationReceiver mReceiver = new NotificationReceiver();
+    private static String ACTION_NOTIFICATION_UPDATE="com.example.notifyme.ACTION_NOTIFICATION_UPDATE";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -35,6 +42,13 @@ public class MainActivity extends AppCompatActivity {
         button_update = findViewById(R.id.update);
         button_update.setOnClickListener(v->updateNotification());
         setNotificationButtonState(true,false,false);
+        registerReceiver(mReceiver,new IntentFilter(ACTION_NOTIFICATION_UPDATE));
+    }
+
+    @Override
+    protected void onDestroy() {
+        unregisterReceiver(mReceiver); //Sic. Must be before calling super?
+        super.onDestroy();
     }
 
     private NotificationCompat.Builder getNotificationBuilder(){
@@ -42,6 +56,9 @@ public class MainActivity extends AppCompatActivity {
         Intent notificationIntent = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent =
                 PendingIntent.getActivity(this,NOTIFICATION_ID,notificationIntent,PendingIntent.FLAG_UPDATE_CURRENT); //!!
+
+        Intent updateIntent = new Intent(ACTION_NOTIFICATION_UPDATE);
+        PendingIntent updatePendingIntent= PendingIntent.getBroadcast(this,NOTIFICATION_ID,updateIntent,PendingIntent.FLAG_ONE_SHOT);
 
         NotificationCompat.Builder notifyBuilder =
                 new NotificationCompat.Builder(this, PRIMARY_CHANNEL_ID)
@@ -53,7 +70,9 @@ public class MainActivity extends AppCompatActivity {
             //backward compat <=7.1
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
-            ;
+
+            //In org. version action is added in sendNotification
+            .addAction(R.drawable.ic_update,"Update Notification",updatePendingIntent);
         return  notifyBuilder;
     }
 
@@ -118,5 +137,14 @@ public class MainActivity extends AppCompatActivity {
         button_update.setEnabled(isUpdateEnabled);
         button_cancel.setEnabled(isCancelEnabled);
     }
+
+    class NotificationReceiver extends BroadcastReceiver{
+        NotificationReceiver(){}
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            updateNotification();
+        }
+    }
+
 
 }
