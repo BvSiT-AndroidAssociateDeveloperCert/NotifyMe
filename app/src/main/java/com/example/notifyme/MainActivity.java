@@ -75,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
             .setSmallIcon(R.drawable.ic_stat_name)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
+            .setUsesChronometer(true)
             //backward compat <=7.1
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
